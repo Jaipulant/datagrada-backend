@@ -65,6 +65,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    // Endpoint ultraligero y público para que UptimeRobot despierte el servidor en Render
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("pong");
+    }
+
     // Clase auxiliar estática para recibir los datos desde el frontend cómodamente
     public static class AuthRequest {
         private String username;

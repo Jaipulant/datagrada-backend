@@ -34,7 +34,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll() 
                 // AQUI ESTA LA LINEA NUEVA:
-                .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/assets/**", "/favicon.ico", "/error").permitAll()
+                .requestMatchers("/", "/index.html", "/*.css", "/*.js", "/error").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
