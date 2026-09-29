@@ -4,8 +4,10 @@ import com.datagrada.backend.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
-public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
+public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     
-    // Este método es clave: Spring Boot lo usará automáticamente para buscar si el usuario existe en la BD cuando intente hacer login
+    // Añade esta línea para que Spring reconozca el existsByUsername
+    boolean existsByUsername(String username);
+
     Optional<Usuario> findByUsername(String username);
 }

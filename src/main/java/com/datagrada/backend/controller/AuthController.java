@@ -35,17 +35,17 @@ public class AuthController {
     public ResponseEntity<?> registrar(@RequestBody AuthRequest request) {
         // Comprobamos si el nombre de usuario ya existe
         if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("El usuario ya existe");
+            return ResponseEntity.badRequest().body("El nombre de usuario ya está en uso.");
         }
 
-        // Creamos el usuario y encriptamos su contraseña antes de guardarla
+        // Creamos el usuario y encriptamos su contraseña con BCrypt antes de guardarla
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setUsername(request.getUsername());
         nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
         
         usuarioRepository.save(nuevoUsuario);
 
-        return ResponseEntity.ok("Usuario registrado correctamente");
+        return ResponseEntity.ok("Usuario registrado con éxito.");
     }
 
     @PostMapping("/login")
