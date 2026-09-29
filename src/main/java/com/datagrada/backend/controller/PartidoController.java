@@ -4,12 +4,15 @@ import com.datagrada.backend.model.Partido;
 import com.datagrada.backend.model.Usuario;
 import com.datagrada.backend.repository.PartidoRepository;
 import com.datagrada.backend.repository.UsuarioRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin("*")
 @RestController
@@ -24,38 +27,48 @@ public class PartidoController {
         this.usuarioRepository = usuarioRepository;
     }
 
-    // Método auxiliar para obtener el username del token actual
     private String obtenerUsuarioActual() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getName(); // Devuelve el username guardado en el JWT
+        return authentication.getName(); 
     }
 
-    // 1. LEER TODOS (Solo los del usuario logueado)
     @GetMapping
     public List<Partido> obtenerTodosLosPartidos() {
         String username = obtenerUsuarioActual();
         return partidoRepository.findByUsuarioUsername(username); 
     }
 
-    // 2. LEER UNO POR ID 
     @GetMapping("/{id}")
     public Partido obtenerPartidoPorId(@PathVariable Integer id) {
         return partidoRepository.findById(id).orElse(null);
     }
 
-    // 3. CREAR (Asociándolo al usuario del token)
+    // ACTUALIZADO: Manejo de errores y prevención de duplicados
     @PostMapping
-    public Partido crearPartido(@RequestBody Partido nuevoPartido) {
+    public ResponseEntity<?> crearPartido(@RequestBody Partido nuevoPartido) {
         String username = obtenerUsuarioActual();
         
-        // Buscamos tu entidad Usuario y se la asignamos al partido para que no se quede sin dueño
+        // 1. Verificar si el partido ya existe para este usuario ese mismo día
+        boolean existeDuplicado = partidoRepository.existsByUsuarioUsernameAndFechaAndEquipoLocal_IdEquiposAndEquipoVisitante_IdEquipos(
+                username, 
+                nuevoPartido.getFecha(), 
+                nuevoPartido.getEquipoLocal().getIdEquipos(), 
+                nuevoPartido.getEquipoVisitante().getIdEquipos()
+        );
+
+        if (existeDuplicado) {
+            // El status 400 disparará el bloque "else" en el fetch de tu frontend
+            return ResponseEntity.badRequest().body("Ya tienes registrado este mismo enfrentamiento en esa fecha.");
+        }
+        
+        // 2. Si no existe, lo guardamos normalmente
         Usuario usuarioLogueado = usuarioRepository.findByUsername(username).orElse(null);
         nuevoPartido.setUsuario(usuarioLogueado);
 
-        return partidoRepository.save(nuevoPartido);
+        Partido partidoGuardado = partidoRepository.save(nuevoPartido);
+        return ResponseEntity.ok(partidoGuardado);
     }
 
-    // 4. ACTUALIZAR (PUT)
     @PutMapping("/{id}")
     public Partido actualizarPartido(@PathVariable Integer id, @RequestBody Partido detallesPartido) {
         Partido partidoExistente = partidoRepository.findById(id).orElse(null);
@@ -74,7 +87,6 @@ public class PartidoController {
         return null;
     }
 
-    // 5. BORRAR (DELETE)
     @DeleteMapping("/{id}")
     public void borrarPartido(@PathVariable Integer id) {
         partidoRepository.deleteById(id);
@@ -106,5 +118,21 @@ public class PartidoController {
     public List<Partido> obtenerPorEquipo(@PathVariable Integer idEquipo) {
         String username = obtenerUsuarioActual();
         return partidoRepository.buscarPorUsuarioYEquipo(username, idEquipo);
+    }
+
+    // --- NUEVO ENDPOINT PARA EL WRAPPED DE FINAL DE AÑO ---
+    @GetMapping("/stats/resumen/{anio}")
+    public ResponseEntity<Map<String, Object>> obtenerResumenAnual(@PathVariable int anio) {
+        String username = obtenerUsuarioActual();
+        
+        long totalPartidos = partidoRepository.countPartidosByAnio(username, anio);
+        List<Object[]> topCompeticiones = partidoRepository.findCompeticionesMasVistas(username, anio);
+        
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("anio", anio);
+        stats.put("totalPartidosVistos", totalPartidos);
+        stats.put("competicionesFavoritas", topCompeticiones);
+        
+        return ResponseEntity.ok(stats);
     }
 }
