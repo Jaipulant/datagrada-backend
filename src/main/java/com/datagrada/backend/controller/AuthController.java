@@ -1,6 +1,8 @@
 package com.datagrada.backend.controller;
 
+import com.datagrada.backend.model.Equipo;
 import com.datagrada.backend.model.Usuario;
+import com.datagrada.backend.repository.EquipoRepository;
 import com.datagrada.backend.repository.UsuarioRepository;
 import com.datagrada.backend.security.JwtService;
 import org.springframework.http.ResponseEntity;
@@ -18,30 +20,39 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
+    private final EquipoRepository equipoRepository; // Añadido para asignar el equipo por defecto
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public AuthController(AuthenticationManager authenticationManager, 
                           UsuarioRepository usuarioRepository, 
+                          EquipoRepository equipoRepository,
                           PasswordEncoder passwordEncoder, 
                           JwtService jwtService) {
         this.authenticationManager = authenticationManager;
         this.usuarioRepository = usuarioRepository;
+        this.equipoRepository = equipoRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
 
-    @PostMapping("/registro")
+    @PostMapping({"/register", "/registro"})
     public ResponseEntity<?> registrar(@RequestBody AuthRequest request) {
-        // Comprobamos si el nombre estilo "joseperez_" ya está pillado
+        // Comprobamos si el nombre de usuario ya existe
         if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("El usuario ya existe");
+            return ResponseEntity.badRequest().body("El nombre de usuario ya está en uso.");
         }
 
-        // Creamos el usuario y encriptamos su contraseña antes de guardarla en la base de datos
+        // Creamos el usuario y encriptamos su contraseña con BCrypt
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setUsername(request.getUsername());
         nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
+        
+        // Asignación por defecto: Nuestro equipo favorito absoluto (Manchester City)
+        Equipo manCity = equipoRepository.findByNombreIgnoreCase("Manchester City").orElse(null);
+        if (manCity != null) {
+            nuevoUsuario.setEquipoFavorito(manCity);
+        }
         
         usuarioRepository.save(nuevoUsuario);
 
@@ -50,28 +61,27 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
-        // Esta línea lanza la comprobación de seguridad. Si la contraseña es incorrecta, corta la ejecución aquí.
+        // Lanza la comprobación de seguridad. Si la contraseña falla, corta aquí.
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
-        // Si la contraseña es correcta, fabricamos su carnet digital (Token JWT)
+        // Si es correcto, generamos el Token JWT
         String token = jwtService.generateToken(request.getUsername());
         
-        // Devolvemos el token en un formato JSON limpio para que tu JavaScript lo guarde fácilmente
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
         
         return ResponseEntity.ok(response);
     }
 
-    // Endpoint ultraligero y público para que UptimeRobot despierte el servidor en Render
+    // Endpoint ultraligero y público para UptimeRobot
     @GetMapping("/ping")
     public ResponseEntity<String> ping() {
         return ResponseEntity.ok("pong");
     }
 
-    // Clase auxiliar estática para recibir los datos desde el frontend cómodamente
+    // Clase auxiliar estática para recibir los datos
     public static class AuthRequest {
         private String username;
         private String password;
