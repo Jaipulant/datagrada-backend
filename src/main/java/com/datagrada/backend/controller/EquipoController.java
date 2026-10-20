@@ -73,17 +73,34 @@ public class EquipoController {
         equipoRepository.deleteById(id);
     }
 
-    // 6. BUSCAR EXTERNO (PROXY A THESPORTSDB)
+    // 6. BUSCAR EXTERNO (PROXY A THESPORTSDB CON MÁSCARA)
     @GetMapping("/buscar-externo")
-    public ResponseEntity<String> buscarEquipoExterno(@RequestParam String nombre) {
+    public org.springframework.http.ResponseEntity<String> buscarEquipoExterno(@RequestParam String nombre) {
         try {
             String url = "https://www.thesportsdb.com/api/v1/json/1/searchteams.php?t=" 
-                    + URLEncoder.encode(nombre, StandardCharsets.UTF_8);
-            RestTemplate restTemplate = new RestTemplate();
-            String jsonResultado = restTemplate.getForObject(url, String.class);
-            return ResponseEntity.ok(jsonResultado);
+                    + java.net.URLEncoder.encode(nombre, "UTF-8");
+            
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            
+            // MÁSCARA: Engañamos a TheSportsDB haciéndonos pasar por un navegador Google Chrome de Windows
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            org.springframework.http.HttpEntity<String> entity = new org.springframework.http.HttpEntity<>(headers);
+            
+            // Hacemos la petición enviando nuestras cabeceras falsas
+            org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(
+                url,
+                org.springframework.http.HttpMethod.GET,
+                entity,
+                String.class
+            );
+            
+            return org.springframework.http.ResponseEntity.ok(response.getBody());
+            
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("{\"error\": \"Error al consultar API externa\"}");
+            // Imprimimos el error exacto en los logs de Render para saber qué pasa si nos bloquean la IP
+            System.out.println("❌ ERROR THESPORTSDB: " + e.getMessage());
+            return org.springframework.http.ResponseEntity.status(500).body("{\"error\": \"Error al consultar API externa\"}");
         }
     }
 }
