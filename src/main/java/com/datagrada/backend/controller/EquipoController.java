@@ -3,16 +3,21 @@ package com.datagrada.backend.controller;
 import com.datagrada.backend.model.Equipo;
 import com.datagrada.backend.repository.EquipoRepository;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping; // <-- Borrar en la BD
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping; // <-- Añadir en la BD
-import org.springframework.web.bind.annotation.PutMapping; // <-- Actualizar en la BD
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @CrossOrigin("*")
@@ -44,8 +49,6 @@ public class EquipoController {
         return equipoRepository.save(nuevoEquipo);
     }
 
-    // --- ¡LO NUEVO! ---
-
     // 4. ACTUALIZAR (PUT)
     @PutMapping("/{id}")
     public Equipo actualizarEquipo(@PathVariable Integer id, @RequestBody Equipo detallesEquipo) {
@@ -68,5 +71,19 @@ public class EquipoController {
     @DeleteMapping("/{id}")
     public void borrarEquipo(@PathVariable Integer id) {
         equipoRepository.deleteById(id);
+    }
+
+    // 6. BUSCAR EXTERNO (PROXY A THESPORTSDB)
+    @GetMapping("/buscar-externo")
+    public ResponseEntity<String> buscarEquipoExterno(@RequestParam String nombre) {
+        try {
+            String url = "https://www.thesportsdb.com/api/v1/json/1/searchteams.php?t=" 
+                    + URLEncoder.encode(nombre, StandardCharsets.UTF_8);
+            RestTemplate restTemplate = new RestTemplate();
+            String jsonResultado = restTemplate.getForObject(url, String.class);
+            return ResponseEntity.ok(jsonResultado);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("{\"error\": \"Error al consultar API externa\"}");
+        }
     }
 }
