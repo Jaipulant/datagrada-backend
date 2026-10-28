@@ -53,6 +53,7 @@ public class EstadisticaController {
         int derrotas = 0;
 
         // La magia: calculamos el resultado partido a partido
+        // La magia: calculamos el resultado partido a partido
         for (Partido p : partidos) {
             boolean esLocal = p.getEquipoLocal().getIdEquipos().equals(idEquipo);
             
@@ -64,7 +65,22 @@ public class EstadisticaController {
             } else if (golesFavor < golesContra) {
                 derrotas++;
             } else {
-                empates++;
+                // Es un empate en goles, revisamos si hubo tanda de penaltis
+                if (Boolean.TRUE.equals(p.getHuboPenaltis()) && p.getGolesPenaltisLocal() != null && p.getGolesPenaltisVisitante() != null) {
+                    int penaltisFavor = esLocal ? p.getGolesPenaltisLocal() : p.getGolesPenaltisVisitante();
+                    int penaltisContra = esLocal ? p.getGolesPenaltisVisitante() : p.getGolesPenaltisLocal();
+                    
+                    if (penaltisFavor > penaltisContra) {
+                        victorias++;
+                    } else if (penaltisFavor < penaltisContra) {
+                        derrotas++;
+                    } else {
+                        empates++;
+                    }
+                } else {
+                    // Si no hubo penaltis, es un empate real
+                    empates++;
+                }
             }
         }
 
