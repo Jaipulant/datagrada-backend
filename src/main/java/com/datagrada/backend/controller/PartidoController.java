@@ -82,6 +82,12 @@ public class PartidoController {
             partidoExistente.setEquipoVisitante(detallesPartido.getEquipoVisitante());
             partidoExistente.setCompeticion(detallesPartido.getCompeticion());
             
+            // Nuevos campos de desempate
+            partidoExistente.setHuboProrroga(detallesPartido.getHuboProrroga());
+            partidoExistente.setHuboPenaltis(detallesPartido.getHuboPenaltis());
+            partidoExistente.setGolesPenaltisLocal(detallesPartido.getGolesPenaltisLocal());
+            partidoExistente.setGolesPenaltisVisitante(detallesPartido.getGolesPenaltisVisitante());
+            
             return partidoRepository.save(partidoExistente);
         }
         return null;

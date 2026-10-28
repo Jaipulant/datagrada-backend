@@ -40,6 +40,31 @@ public class Partido {
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
+    @Column(name = "hubo_prorroga")
+    private Boolean huboProrroga = false;
+
+    @Column(name = "hubo_penaltis")
+    private Boolean huboPenaltis = false;
+
+    @Column(name = "goles_penaltis_local")
+    private Integer golesPenaltisLocal;
+
+    @Column(name = "goles_penaltis_visitante")
+    private Integer golesPenaltisVisitante;
+
+    // (Añade esto al final, junto a los otros getters/setters)
+    public Boolean getHuboProrroga() { return huboProrroga; }
+    public void setHuboProrroga(Boolean huboProrroga) { this.huboProrroga = huboProrroga; }
+
+    public Boolean getHuboPenaltis() { return huboPenaltis; }
+    public void setHuboPenaltis(Boolean huboPenaltis) { this.huboPenaltis = huboPenaltis; }
+
+    public Integer getGolesPenaltisLocal() { return golesPenaltisLocal; }
+    public void setGolesPenaltisLocal(Integer golesPenaltisLocal) { this.golesPenaltisLocal = golesPenaltisLocal; }
+
+    public Integer getGolesPenaltisVisitante() { return golesPenaltisVisitante; }
+    public void setGolesPenaltisVisitante(Integer golesPenaltisVisitante) { this.golesPenaltisVisitante = golesPenaltisVisitante; }
+
     public Partido() {}
 
     // --- Getters y Setters ---
